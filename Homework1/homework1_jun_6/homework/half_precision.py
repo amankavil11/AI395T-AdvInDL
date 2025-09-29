@@ -17,13 +17,12 @@ class HalfLinear(torch.nn.Linear):
         """
         super().__init__(in_features=in_features, out_features=out_features, bias=bias, dtype=torch.float16)
 
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
+        
         self.requires_grad_(False)
 
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = super().forward(x.to(dtype=self.weight.dtype, device=self.device))
+        out = super().forward(x.to(dtype=self.weight.dtype, device=self.weight.device))
         return out.to(x.dtype)
 
 
