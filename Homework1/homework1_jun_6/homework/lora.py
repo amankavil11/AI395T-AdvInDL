@@ -29,13 +29,13 @@ class LoRALinear(HalfLinear):
 
         self.lora_a = torch.nn.Linear(
            in_features, lora_dim, bias=False,
-           dtype=self.weight.dtype, device=self.weight.device
+           dtype=torch.float32, device=self.weight.device
         )
         torch.nn.init.kaiming_normal_(self.lora_a.weight)
 
         self.lora_b = torch.nn.Linear(
             lora_dim, out_features, bias=False,
-            dtype=self.weight.dtype, device=self.weight.device)
+            dtype=torch.float32, device=self.weight.device)
         torch.nn.init.zeros_(self.lora_b.weight)
 
         self.lora_a.weight.requires_grad_(True)
@@ -43,7 +43,7 @@ class LoRALinear(HalfLinear):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # TODO: Forward. Make sure to cast inputs to self.linear_dtype and the output back to x.dtype
-        out = super().forward(x.to(dtype=self.weight.dtype, device=self.weight.device)) + self.lora_b(self.lora_a(x.to(dtype=self.weight.dtype, device=self.weight.device)))
+        out = super().forward(x.to(device=self.weight.device)) + self.lora_b(self.lora_a(x.to(dtype=torch.float32, device=self.weight.device)))
         return out.to(x.dtype)
 
 
