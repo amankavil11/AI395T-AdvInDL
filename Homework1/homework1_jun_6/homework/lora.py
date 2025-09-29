@@ -29,13 +29,13 @@ class LoRALinear(HalfLinear):
 
         self.lora_a = torch.nn.Linear(
            in_features, lora_dim, bias=False,
-           dtype=torch.float32, device=self.weight.device
+           dtype=self.weight.dtype, device=self.weight.device
         )
         torch.nn.init.kaiming_normal_(self.lora_a.weight)
 
         self.lora_b = torch.nn.Linear(
             lora_dim, out_features, bias=False,
-            dtype=torch.float32, device=self.weight.device)
+            dtype=self.weight.dtype, device=self.weight.device)
         torch.nn.init.zeros_(self.lora_b.weight)
 
         self.lora_a.weight.requires_grad_(True)
