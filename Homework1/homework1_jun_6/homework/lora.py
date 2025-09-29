@@ -43,14 +43,9 @@ class LoRALinear(HalfLinear):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # TODO: Forward. Make sure to cast inputs to self.linear_dtype and the output back to x.dtype
-        x16 = x.to(dtype=self.weight.dtype, device=self.weight.device)  # fp16
-        out_base = super().forward(x16).to(torch.float32)               # promote to fp32 for stable sum
+        out = super().forward(x.to(dtype=self.weight.dtype, device=self.weight.device)) + self.lora_b(self.lora_a(x.to(dtype=self.weight.dtype, device=self.weight.device)))
+        return out.to(x.dtype)
 
-        # LoRA path: keep activations in fp32 to match fp32 LoRA weights
-        x32 = x.to(dtype=torch.float32, device=self.weight.device)
-        out_lora = self.lora_b(self.lora_a(x32))                        # fp32
-
-        return (out_base + out_lora).to(x.dtype)
 
 class LoraBigNet(torch.nn.Module):
     class Block(torch.nn.Module):
