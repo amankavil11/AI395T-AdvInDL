@@ -22,7 +22,7 @@ class HalfLinear(torch.nn.Linear):
 
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = super().forward(x.to(dtype=torch.float16, device=self.weight.device))
+        out = super().forward(x.to(dtype=torch.float16))
         return out.to(x.dtype)
 
 
