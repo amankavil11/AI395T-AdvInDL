@@ -44,7 +44,6 @@ class Linear4Bit(torch.nn.Module):
         # Let's store all the required information to load the weights from a checkpoint
         self._shape = (out_features, in_features)
         self._group_size = group_size
-        self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
         # self.register_buffer is used to store the weights in the model, but not as parameters
         # This makes sure weights are put on the correct device when calling `model.to(device)`.
@@ -86,7 +85,7 @@ class Linear4Bit(torch.nn.Module):
             weights = weights.to(device=x.device, dtype=torch.float32)
             b = self.bias.to(x.device, dtype=torch.float32) if self.bias is not None else None
             y = torch.nn.functional.linear(x.to(dtype=weights.dtype), weights, b)
-            return y.to(x.dtype)
+            return y.to(x.dtype, device=x.device)
 
 
 class BigNet4Bit(torch.nn.Module):
