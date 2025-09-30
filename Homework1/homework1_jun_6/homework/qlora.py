@@ -19,20 +19,25 @@ class QLoRALinear(Linear4Bit):
         self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         self.requires_grad_(False)
 
-        self.lora_a = torch.nn.Linear(in_features, lora_dim, bias=False)
+        self.lora_a = torch.nn.Linear(
+           in_features, lora_dim, bias=False,
+           dtype=torch.float32
+        ).to(self.device)
         torch.nn.init.kaiming_normal_(self.lora_a.weight)
 
-        self.lora_b = torch.nn.Linear(lora_dim, out_features, bias=False)
+        self.lora_b = torch.nn.Linear(
+            lora_dim, out_features, bias=False,
+            dtype=torch.float32
+        ).to(self.device)
         torch.nn.init.zeros_(self.lora_b.weight)
 
         self.lora_a.weight.requires_grad_(True)
         self.lora_b.weight.requires_grad_(True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x.to(device=x.device)
-        out_base = super().forward(x)
-        out_lora = self.lora_b(self.lora_a(x))
-        return (out_base + out_lora).to(x.dtype)
+        base_out = super().forward(x.to(self.device))
+        lora_out = self.lora_b(self.lora_a(x.to(dtype=torch.float32)))
+        return base_out + lora_out.to(x.dtype)
 
 
 class QLoRABigNet(torch.nn.Module):

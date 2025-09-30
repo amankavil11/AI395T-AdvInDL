@@ -25,18 +25,19 @@ class LoRALinear(HalfLinear):
         Hint: Make sure the linear layers are not trainable, but the LoRA layers are
         """
         super().__init__(in_features, out_features, bias)
+        self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         self.requires_grad_(False)
 
         self.lora_a = torch.nn.Linear(
            in_features, lora_dim, bias=False,
            dtype=torch.float32
-        )
+        ).to(self.device)
         torch.nn.init.kaiming_normal_(self.lora_a.weight)
 
         self.lora_b = torch.nn.Linear(
             lora_dim, out_features, bias=False,
             dtype=torch.float32
-        )
+        ).to(self.device)
         torch.nn.init.zeros_(self.lora_b.weight)
 
         self.lora_a.weight.requires_grad_(True)
@@ -44,7 +45,7 @@ class LoRALinear(HalfLinear):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # TODO: Forward. Make sure to cast inputs to self.linear_dtype and the output back to x.dtype
-        base_out = super().forward(x)
+        base_out = super().forward(x.to(self.device))
         lora_out = self.lora_b(self.lora_a(x.to(dtype=torch.float32)))
         return base_out + lora_out.to(x.dtype)
 

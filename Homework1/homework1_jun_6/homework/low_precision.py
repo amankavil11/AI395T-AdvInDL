@@ -67,7 +67,7 @@ class Linear4Bit(torch.nn.Module):
         # Add in an optional bias
         self.bias = None
         if bias:
-            self.bias = torch.nn.Parameter(torch.zeros(out_features, dtype=torch.float32, device=self.device))
+            self.bias = torch.nn.Parameter(torch.zeros(out_features, dtype=torch.float32))
 
     def _load_state_dict_pre_hook(
         self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
@@ -82,11 +82,11 @@ class Linear4Bit(torch.nn.Module):
         with torch.no_grad():
             # TODO: Dequantize and call the layer
             # Hint: You can use torch.nn.functional.linear
-            W = block_dequantize_4bit(self.weight_q4, self.weight_norm).view(*self._shape)
-            W = W.to(device=x.device, dtype=torch.float32)
+            weights = block_dequantize_4bit(self.weight_q4, self.weight_norm).view(*self._shape)
+            weights = weights.to(device=x.device, dtype=torch.float32)
             b = self.bias.to(x.device, dtype=torch.float32) if self.bias is not None else None
-            y = torch.nn.functional.linear(x.to(dtype=W.dtype, device=x.device), W, b)
-            return y.to(dtype=x.dtype)
+            y = torch.nn.functional.linear(x.to(dtype=weights.dtype), weights, b)
+            return y.to(x.dtype)
 
 
 class BigNet4Bit(torch.nn.Module):
