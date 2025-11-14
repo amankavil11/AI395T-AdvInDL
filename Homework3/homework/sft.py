@@ -54,11 +54,17 @@ def format_example(prompt: str, answer: str) -> dict[str, str]:
     if y.is_integer():
         ans_str = str(int(y))
     else:
-        # 15 significant digits is usually enough to round-trip a float
         ans_str = format(y, ".15g")
 
     answer_text = f"<answer>{ans_str}</answer>"
-    return {"question": prompt, "answer": answer_text}
+
+    question_text = (
+        f"{prompt}\n\n"
+        "Respond with the numeric answer in the form "
+        "<answer>NUMBER</answer> and nothing else."
+    )
+
+    return {"question": question_text, "answer": answer_text}
 
 
 class TokenizedDataset:
