@@ -38,7 +38,7 @@ class BaseLLM:
         except (IndexError, ValueError):
             return float("nan")
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, temperature: float = 0.0) -> str:
         """
         (Optional) Implement this method first and then implement batched_generate below.
         It is much easier to implement generation without batching.
@@ -55,13 +55,20 @@ class BaseLLM:
         if attention_mask is not None:
             attention_mask = attention_mask.to(self.device)
 
+        gen_kwargs = dict(
+            max_new_tokens=32,  # enough for <answer>...</answer> + number
+            pad_token_id=self.tokenizer.pad_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+            do_sample=temperature > 0,
+        )
+        if temperature > 0:
+            gen_kwargs["temperature"] = float(temperature)
+
         with torch.no_grad():
             outputs = self.model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                max_new_tokens=8,
-                pad_token_id=self.tokenizer.pad_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
+                **gen_kwargs,
             )
 
         new_tokens = outputs[0, input_ids.shape[1]:]
@@ -116,22 +123,27 @@ class BaseLLM:
             prompts,
             padding=True,
             return_tensors="pt",
-            add_special_tokens=False,  # important with chat templates
+            add_special_tokens=False,  # keep raw question format
         )
         input_ids = enc["input_ids"].to(self.device)
         attention_mask = enc["attention_mask"].to(self.device)
 
-        do_sample = temperature > 0
+        gen_kwargs = dict(
+            max_new_tokens=32,
+            pad_token_id=self.tokenizer.pad_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+            do_sample=temperature > 0,
+        )
+        if temperature > 0:
+            gen_kwargs["temperature"] = float(temperature)
+        if num_return_sequences is not None and num_return_sequences > 1:
+            gen_kwargs["num_return_sequences"] = int(num_return_sequences)
+
         with torch.inference_mode():
             outputs = self.model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                max_new_tokens=32,                 # give room for tags + number
-                pad_token_id=self.tokenizer.pad_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-                do_sample=do_sample,
-                temperature=float(temperature) if do_sample else 0.0,
-                num_return_sequences=1 if num_return_sequences is None else num_return_sequences,
+                **gen_kwargs,
             )
 
         # Slice per row based on left padding
@@ -140,6 +152,9 @@ class BaseLLM:
         for i in range(outputs.size(0)):
             cont_i = outputs[i, int(input_lengths[i].item()):]
             decoded.append(self.tokenizer.decode(cont_i, skip_special_tokens=True).strip())
+
+        if num_return_sequences and num_return_sequences > 1:
+            return [decoded[i:i+num_return_sequences] for i in range(0, len(decoded), num_return_sequences)]
         return decoded
     
     def answer(self, *questions) -> list[float]:
