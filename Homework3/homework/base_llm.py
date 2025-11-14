@@ -121,20 +121,21 @@ class BaseLLM:
         input_ids = enc["input_ids"].to(self.device)
         attention_mask = enc["attention_mask"].to(self.device)
 
+        do_sample = temperature > 0
         with torch.inference_mode():
             outputs = self.model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                max_new_tokens=40,
+                max_new_tokens=32,                 # give room for tags + number
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                do_sample=True,
-                temperature=0.2
+                do_sample=do_sample,
+                temperature=float(temperature) if do_sample else 0.0,
+                num_return_sequences=1 if num_return_sequences is None else num_return_sequences,
             )
 
-        # Per-row slicing because of left padding:
-        # number of non-pad tokens in each row = true prompt length
-        input_lengths = attention_mask.sum(dim=1)  # shape: (batch,)
+        # Slice per row based on left padding
+        input_lengths = attention_mask.sum(dim=1)
         decoded = []
         for i in range(outputs.size(0)):
             cont_i = outputs[i, int(input_lengths[i].item()):]

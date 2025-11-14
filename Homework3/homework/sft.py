@@ -51,11 +51,11 @@ def format_example(prompt: str, answer: str) -> dict[str, str]:
     """
     y = float(answer)
 
-    # Nicely formatted number: integers without .0, floats trimmed
     if y.is_integer():
         ans_str = str(int(y))
     else:
-        ans_str = f"{y:.6f}".rstrip("0").rstrip(".")
+        # 15 significant digits is usually enough to round-trip a float
+        ans_str = format(y, ".15g")
 
     answer_text = f"<answer>{ans_str}</answer>"
     return {"question": prompt, "answer": answer_text}
