@@ -84,7 +84,7 @@ class TokenizedDataset:
 
 
 def train_model(
-    output_dir: str,
+    output_dir="sft_model",
     **kwargs,
 ):
     import torch
@@ -119,7 +119,7 @@ def train_model(
     train_dataset = TokenizedDataset(tokenizer, train_data, format_example)
     valid_dataset = TokenizedDataset(tokenizer, valid_data, format_example)
 
-    output_dir = str(Path("sft_model"))
+    output_dir = str(Path(output_dir))
 
     # 4. Training arguments
     training_args = TrainingArguments(
