@@ -98,10 +98,9 @@ def train_model(
     model = base_llm.model
 
     # 2. Attach LoRA adapter
-    # Keep r small so total params stay under 380M and adapter stays small.
     lora_config = LoraConfig(
-        r=4,                    # small rank to keep parameter overhead low
-        lora_alpha=16,          # ~4x r, as recommended
+        r=4,                    # keep rank small for size limits
+        lora_alpha=16,          # ~4x r
         target_modules="all-linear",
         bias="none",
         task_type="CAUSAL_LM",
@@ -114,26 +113,22 @@ def train_model(
 
     # 3. Build tokenized datasets
     train_data = Dataset("train")
-    valid_data = Dataset("valid")
+    valid_data = Dataset("valid")  # used only for evaluation if your Trainer supports it
 
     train_dataset = TokenizedDataset(tokenizer, train_data, format_example)
     valid_dataset = TokenizedDataset(tokenizer, valid_data, format_example)
 
     output_dir = str(Path(output_dir))
 
-    # 4. Training arguments
+    # 4. Training arguments (minimal, to avoid unsupported kwargs)
     training_args = TrainingArguments(
         output_dir=output_dir,
-        logging_dir=output_dir,
-        report_to=["tensorboard"],
         per_device_train_batch_size=32,
-        gradient_checkpointing=True,
         num_train_epochs=5,
         learning_rate=2e-4,
+        gradient_checkpointing=True,
         fp16=torch.cuda.is_available(),
-        save_strategy="epoch",
-        evaluation_strategy="epoch",
-        remove_unused_columns=False,  # important for custom datasets returning dicts
+        logging_dir=output_dir,
         logging_steps=50,
     )
 
@@ -142,13 +137,15 @@ def train_model(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=valid_dataset,
+        eval_dataset=valid_dataset,  # harmless even if no eval loop is configured
     )
 
     trainer.train()
 
     # Save final adapter (LoRA weights) into `output_dir`
     trainer.save_model(output_dir)
+
+    # Optional sanity check using your existing helper
     test_model(output_dir)
 
 
