@@ -96,17 +96,30 @@ def train_model(
     outdir = str(Path(output_dir))
 
     # 5) training args — modest extra pass
+    from transformers import TrainingArguments
+
+    use_bf16 = False
+    try:
+        import torch
+        use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+    except Exception:
+        pass
+
     args = TrainingArguments(
         output_dir=outdir,
         per_device_train_batch_size=32,
-        num_train_epochs=6,            # short “refinement” pass
-        learning_rate=8e-5,
+        num_train_epochs=8,
+        learning_rate=1e-4,
         lr_scheduler_type="cosine",
         warmup_ratio=0.1,
         weight_decay=0.01,
         max_grad_norm=1.0,
         gradient_checkpointing=True,
-        fp16=torch.cuda.is_available(),
+
+        # >>> key change(s) to avoid the GradScaler assertion
+        fp16=False,                 # turn off fp16 AMP
+        bf16=use_bf16,              # use bf16 only if supported; else stays False
+
         logging_dir=outdir,
         logging_steps=50,
         save_strategy="no",
