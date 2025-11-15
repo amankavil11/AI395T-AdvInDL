@@ -74,7 +74,7 @@ def train_model(
     # 3) Ensure we have a LoRA-adaptable model (attach a fresh head if not already PEFT)
     if not hasattr(model, "peft_config"):
         lora_config = LoraConfig(
-            r=16,
+            r=12,
             lora_alpha=64,
             lora_dropout=0.05,
             target_modules="all-linear",

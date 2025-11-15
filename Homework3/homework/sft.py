@@ -105,7 +105,7 @@ def train_model(
 
     # 2. Attach LoRA adapter
     lora_config = LoraConfig(
-        r=20,              # more rank → more capacity
+        r=16,              # more rank → more capacity
         lora_alpha=80,    # usually 4x r
         target_modules="all-linear",
         bias="none",
