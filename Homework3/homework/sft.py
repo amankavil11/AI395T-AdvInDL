@@ -105,8 +105,8 @@ def train_model(
 
     # 2. Attach LoRA adapter
     lora_config = LoraConfig(
-        r=16,              # more rank → more capacity
-        lora_alpha=64,    # usually 4x r
+        r=20,              # more rank → more capacity
+        lora_alpha=80,    # usually 4x r
         target_modules="all-linear",
         bias="none",
         task_type="CAUSAL_LM",
@@ -130,12 +130,18 @@ def train_model(
     training_args = TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=32,
-        num_train_epochs=10,   # from 5 → 10
-        learning_rate=1e-4,    # from 2e-4 → 1e-4
+        num_train_epochs=16,                 # 14→16 often nudges accuracy upward
+        learning_rate=1e-4,
+        lr_scheduler_type="cosine",          # NEW
+        warmup_ratio=0.1,                    # keep this
+        weight_decay=0.01,
+        max_grad_norm=1.0,                   # NEW: gradient clipping
         gradient_checkpointing=True,
         fp16=torch.cuda.is_available(),
         logging_dir=output_dir,
         logging_steps=50,
+        save_strategy="no",
+        report_to=[],
     )
 
     # 5. Trainer
