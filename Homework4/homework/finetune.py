@@ -184,6 +184,7 @@ def train(
         num_train_epochs=num_train_epochs,
         per_device_train_batch_size=per_device_train_batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,
+        gradient_checkpointing=True,  # Enable gradient checkpointing to save memory
         learning_rate=learning_rate,
         bf16=True if DEVICE == "cuda" else False,
         logging_steps=1,
