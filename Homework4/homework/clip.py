@@ -288,11 +288,12 @@ def get_target_modules_for_lora(model: nn.Module) -> list[str]:
 def train(
     data_dir: Path | None = None,
     output_dir: str = "clip",
-    num_train_epochs: float = 0.05,  # for debugging purpose, increase this once the dry run works
-    per_device_train_batch_size: int = 1024,
-    gradient_accumulation_steps: int = 1,
+    num_train_epochs: float = 1.0,  # Increased from 0.05 for better training
+    per_device_train_batch_size: int = 32,  # Reduced from 1024 to fit GPU memory
+    gradient_accumulation_steps: int = 32,  # Increased to maintain effective batch size (32 * 32 = 1024)
     learning_rate: float = 5e-4,
-    num_workers: int = 16,
+    num_workers: int = 4,  # Reduced to save memory
+    warmup_steps: int = 100,
 ):
     vlm = BaseVLM()
 
@@ -341,12 +342,16 @@ def train(
         gradient_checkpointing=True,
         learning_rate=learning_rate,
         bf16=True if device == "cuda" else False,
-        logging_steps=1,
+        logging_steps=10,  # Log less frequently
         save_strategy="steps",
-        save_steps=50,
+        save_steps=500,  # Save less frequently
         save_total_limit=2,
         label_names=["labels"],
         dataloader_num_workers=num_workers,
+        dataloader_pin_memory=False,  # Disable pin memory to save GPU memory
+        warmup_steps=warmup_steps,
+        lr_scheduler_type="cosine",
+        weight_decay=0.01,
     )
 
     trainer = Trainer(
