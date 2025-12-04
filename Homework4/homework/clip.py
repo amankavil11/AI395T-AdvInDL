@@ -228,22 +228,25 @@ class CLIP(nn.Module):
 
 
 def compute_clip_loss(
-    outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
-    labels: torch.Tensor,
+    model: nn.Module,
+    inputs: dict[str, torch.Tensor],
+    return_outputs: bool = False,
     num_items_in_batch: int | None = None,
-) -> torch.Tensor:
+) -> torch.Tensor | tuple[torch.Tensor, tuple]:
     """
     Compute the loss for the CLIP model.
     Args:
-        outputs: A tuple containing the outputs of CLIP.forward().
-        labels: The labels for the text features.
-        (NOTE: you don't need to use the variable `labels`, this is just for compatibility with the Trainer class)
-        num_items_in_batch: The number of items in the batch.
-        (NOTE: you don't need to use the variable `num_items_in_batch`, this is just for compatibility with Trainer)
+        model: The CLIP model.
+        inputs: Dictionary containing model inputs (pixel_values, input_ids, attention_mask, labels).
+        return_outputs: Whether to return outputs along with loss.
+        num_items_in_batch: The number of items in the batch (for compatibility with Trainer).
     Returns:
-        The loss for the CLIP model.
+        The loss for the CLIP model, or (loss, outputs) if return_outputs=True.
     """
+    # Forward pass through the model
+    outputs = model(**inputs)
     vision_features, text_features, logits = outputs
+    
     batch_size = vision_features.shape[0]
     
     # Create labels for contrastive learning (diagonal = positive pairs)
@@ -263,6 +266,8 @@ def compute_clip_loss(
     # Average the two losses
     loss = (loss_i2t + loss_t2i) / 2.0
     
+    if return_outputs:
+        return loss, outputs
     return loss
 
 

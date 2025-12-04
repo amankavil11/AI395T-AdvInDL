@@ -119,6 +119,7 @@ def train(
     lora_alpha: int = 32,
     lora_dropout: float = 0.0,
     num_workers: int = 16,
+    warmup_steps: int = 100,
 ):
     """
     Fine-tune a VLM model using LoRA.
@@ -187,12 +188,15 @@ def train(
         gradient_checkpointing=True,  # Enable gradient checkpointing to save memory
         learning_rate=learning_rate,
         bf16=True if DEVICE == "cuda" else False,
-        logging_steps=1,
+        logging_steps=10,  # Log every 10 steps instead of every step
         save_strategy="steps",
-        save_steps=50,
+        save_steps=500,  # Save less frequently to reduce overhead
         save_total_limit=2,
         label_names=["labels"],
         dataloader_num_workers=num_workers,
+        warmup_steps=warmup_steps,  # Add warmup for better learning
+        lr_scheduler_type="cosine",  # Use cosine learning rate schedule
+        weight_decay=0.01,  # Add weight decay for regularization
     )
 
     # Initialize trainer

@@ -52,10 +52,13 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
         captions.append(f"The track is {track_name}.")
     
     # 4. Relative position captions for each kart (except ego car)
-    for kart in kart_objects:
-        if kart["is_ego_car"]:
-            continue
-        
+    non_ego_karts = [k for k in kart_objects if not k["is_ego_car"]]
+    left_count = 0
+    right_count = 0
+    front_count = 0
+    behind_count = 0
+    
+    for kart in non_ego_karts:
         kart_name = kart["kart_name"]
         kart_center_x, kart_center_y = kart["center"]
         
@@ -66,6 +69,15 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
         # Determine front/behind (front means lower y value in image coordinates)
         is_front = kart_center_y < ego_center_y
         is_behind = kart_center_y > ego_center_y
+        
+        if is_left:
+            left_count += 1
+        if is_right:
+            right_count += 1
+        if is_front:
+            front_count += 1
+        if is_behind:
+            behind_count += 1
         
         # Build position description
         position_parts = []
@@ -81,6 +93,55 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
         if position_parts:
             position = " and ".join(position_parts)
             captions.append(f"{kart_name} is {position} of the ego car.")
+            # Additional variations
+            captions.append(f"The {kart_name} kart is positioned {position} of the ego car.")
+            if is_left:
+                captions.append(f"{kart_name} is on the left side of the ego car.")
+            if is_right:
+                captions.append(f"{kart_name} is on the right side of the ego car.")
+            if is_front:
+                captions.append(f"{kart_name} is ahead of the ego car.")
+            if is_behind:
+                captions.append(f"{kart_name} is behind the ego car.")
+    
+    # 5. Additional descriptive captions
+    if track_name:
+        captions.append(f"This is the {track_name} track.")
+        captions.append(f"The scene takes place on the {track_name} track.")
+    
+    # Counting variations
+    if total_karts == 1:
+        captions.append("Only the ego car is visible.")
+    else:
+        captions.append(f"There are {total_karts} karts racing on the track.")
+        captions.append(f"The scene shows {total_karts} karts.")
+    
+    # Position summary captions
+    if left_count > 0:
+        captions.append(f"There are {left_count} karts to the left of the ego car.")
+    if right_count > 0:
+        captions.append(f"There are {right_count} karts to the right of the ego car.")
+    if front_count > 0:
+        captions.append(f"There are {front_count} karts in front of the ego car.")
+    if behind_count > 0:
+        captions.append(f"There are {behind_count} karts behind the ego car.")
+    
+    # List all kart names
+    all_kart_names = [k["kart_name"] for k in kart_objects]
+    captions.append(f"The karts in the scene are: {', '.join(all_kart_names)}.")
+    
+    # Find closest kart
+    if non_ego_karts:
+        import numpy as np
+        distances = []
+        for kart in non_ego_karts:
+            kart_center_x, kart_center_y = kart["center"]
+            dist = np.sqrt((kart_center_x - ego_center_x)**2 + (kart_center_y - ego_center_y)**2)
+            distances.append((dist, kart["kart_name"]))
+        
+        distances.sort()
+        closest_kart = distances[0][1]
+        captions.append(f"The closest kart to the ego car is {closest_kart}.")
     
     return captions
 

@@ -387,6 +387,154 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
         "answer": str(behind_count)
     })
     
+    # 6. Additional question variations for more data
+    # Ego car variations
+    qa_pairs.append({
+        "question": "Which kart is the ego car?",
+        "answer": ego_kart_name
+    })
+    
+    qa_pairs.append({
+        "question": "What is the name of the ego car?",
+        "answer": ego_kart_name
+    })
+    
+    # Total karts variations
+    qa_pairs.append({
+        "question": "How many total karts are visible?",
+        "answer": str(total_karts)
+    })
+    
+    qa_pairs.append({
+        "question": "Count the number of karts in the image.",
+        "answer": str(total_karts)
+    })
+    
+    # Track variations
+    if track_name:
+        qa_pairs.append({
+            "question": "What is the name of this track?",
+            "answer": track_name
+        })
+        
+        qa_pairs.append({
+            "question": "Which track is shown in this image?",
+            "answer": track_name
+        })
+    
+    # Questions about specific karts and their positions
+    non_ego_karts = [k for k in kart_objects if not k["is_ego_car"]]
+    
+    for kart in non_ego_karts:
+        kart_name = kart["kart_name"]
+        kart_center_x, kart_center_y = kart["center"]
+        
+        # Distance-based questions
+        distance = np.sqrt((kart_center_x - ego_center_x)**2 + (kart_center_y - ego_center_y)**2)
+        
+        # Position variations
+        if kart_center_x < ego_center_x:
+            qa_pairs.append({
+                "question": f"On which side of the ego car is {kart_name}?",
+                "answer": "left"
+            })
+        elif kart_center_x > ego_center_x:
+            qa_pairs.append({
+                "question": f"On which side of the ego car is {kart_name}?",
+                "answer": "right"
+            })
+        
+        if kart_center_y < ego_center_y:
+            qa_pairs.append({
+                "question": f"Is {kart_name} ahead or behind the ego car?",
+                "answer": "ahead"
+            })
+        elif kart_center_y > ego_center_y:
+            qa_pairs.append({
+                "question": f"Is {kart_name} ahead or behind the ego car?",
+                "answer": "behind"
+            })
+    
+    # Find closest and farthest karts
+    if non_ego_karts:
+        distances = []
+        for kart in non_ego_karts:
+            kart_center_x, kart_center_y = kart["center"]
+            dist = np.sqrt((kart_center_x - ego_center_x)**2 + (kart_center_y - ego_center_y)**2)
+            distances.append((dist, kart["kart_name"]))
+        
+        distances.sort()
+        closest_kart = distances[0][1]
+        farthest_kart = distances[-1][1]
+        
+        qa_pairs.append({
+            "question": "Which kart is closest to the ego car?",
+            "answer": closest_kart
+        })
+        
+        if len(distances) > 1:
+            qa_pairs.append({
+                "question": "Which kart is farthest from the ego car?",
+                "answer": farthest_kart
+            })
+    
+    # Counting variations
+    qa_pairs.append({
+        "question": "What is the total number of karts?",
+        "answer": str(total_karts)
+    })
+    
+    if left_count > 0:
+        qa_pairs.append({
+            "question": "Are there any karts to the left of the ego car?",
+            "answer": "yes"
+        })
+    else:
+        qa_pairs.append({
+            "question": "Are there any karts to the left of the ego car?",
+            "answer": "no"
+        })
+    
+    if right_count > 0:
+        qa_pairs.append({
+            "question": "Are there any karts to the right of the ego car?",
+            "answer": "yes"
+        })
+    else:
+        qa_pairs.append({
+            "question": "Are there any karts to the right of the ego car?",
+            "answer": "no"
+        })
+    
+    if front_count > 0:
+        qa_pairs.append({
+            "question": "Are there any karts in front of the ego car?",
+            "answer": "yes"
+        })
+    else:
+        qa_pairs.append({
+            "question": "Are there any karts in front of the ego car?",
+            "answer": "no"
+        })
+    
+    if behind_count > 0:
+        qa_pairs.append({
+            "question": "Are there any karts behind the ego car?",
+            "answer": "yes"
+        })
+    else:
+        qa_pairs.append({
+            "question": "Are there any karts behind the ego car?",
+            "answer": "no"
+        })
+    
+    # List all kart names
+    all_kart_names = [k["kart_name"] for k in kart_objects]
+    qa_pairs.append({
+        "question": "List all the karts in the scene.",
+        "answer": ", ".join(all_kart_names)
+    })
+    
     return qa_pairs
 
 
