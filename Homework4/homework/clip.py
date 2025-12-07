@@ -214,6 +214,11 @@ class CLIP(nn.Module):
                 text_features = text_outputs.last_hidden_state[:, 0]
         
         # Project to common dimension
+        # Ensure features match the dtype of the projection layers
+        proj_dtype = next(self.vision_projection.parameters()).dtype
+        vision_features = vision_features.to(dtype=proj_dtype)
+        text_features = text_features.to(dtype=proj_dtype)
+        
         vision_features = self.vision_projection(vision_features)
         text_features = self.text_projection(text_features)
         
