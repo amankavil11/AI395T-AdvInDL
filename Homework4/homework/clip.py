@@ -228,23 +228,31 @@ class CLIP(nn.Module):
 
 
 def compute_clip_loss(
-    model: nn.Module,
-    inputs: dict[str, torch.Tensor],
-    return_outputs: bool = False,
+    outputs: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    labels: torch.Tensor,
     num_items_in_batch: int | None = None,
-) -> torch.Tensor | tuple[torch.Tensor, tuple]:
+) -> torch.Tensor:
     """
     Compute the loss for the CLIP model.
     Args:
-        model: The CLIP model.
-        inputs: Dictionary containing model inputs (pixel_values, input_ids, attention_mask, labels).
-        return_outputs: Whether to return outputs along with loss.
+        outputs: Tuple containing (vision_features, text_features, logits) from CLIP.forward().
+        labels: The labels for the text features (not used, but required by Trainer).
         num_items_in_batch: The number of items in the batch (for compatibility with Trainer).
     Returns:
-        The loss for the CLIP model, or (loss, outputs) if return_outputs=True.
+        The loss for the CLIP model.
     """
-    # Forward pass through the model
-    outputs = model(**inputs)
+    # Unpack outputs from the model forward pass
+    # Handle case where outputs might be wrapped (e.g., by PEFT)
+    if not isinstance(outputs, tuple):
+        raise TypeError(
+            f"CLIP model forward should return a tuple of 3 tensors, "
+            f"but got {type(outputs)}. Outputs: {outputs}"
+        )
+    if len(outputs) != 3:
+        raise ValueError(
+            f"CLIP model forward should return a tuple of 3 tensors, "
+            f"but got {len(outputs)} elements: {outputs}"
+        )
     vision_features, text_features, logits = outputs
     
     batch_size = vision_features.shape[0]
@@ -266,8 +274,6 @@ def compute_clip_loss(
     # Average the two losses
     loss = (loss_i2t + loss_t2i) / 2.0
     
-    if return_outputs:
-        return loss, outputs
     return loss
 
 
