@@ -3,6 +3,10 @@ import zipfile
 from pathlib import Path
 
 BLACKLIST = ["__pycache__", ".pyc", ".ipynb"]
+# Exclude checkpoint-related files and training artifacts
+CHECKPOINT_BLACKLIST = ["optimizer.pt", "scheduler.pt", "rng_state.pth", 
+                        "trainer_state.json", "training_args.bin", 
+                        "events.out.tfevents"]
 MAXSIZE_MB = 40
 
 
@@ -17,7 +21,20 @@ def bundle(homework_dir: str, utid: str):
     files = []
 
     for f in homework_dir.rglob("*"):
-        if all(b not in str(f) for b in BLACKLIST):
+        # Skip if matches base blacklist
+        if any(b in str(f) for b in BLACKLIST):
+            continue
+        
+        # Skip checkpoint directories entirely
+        if "checkpoint-" in f.name or "tensorboard" in f.name:
+            continue
+        
+        # Skip checkpoint-related files (optimizer, scheduler, etc.)
+        if any(b in f.name for b in CHECKPOINT_BLACKLIST):
+            continue
+        
+        # Only include files, not directories
+        if f.is_file():
             files.append(f)
 
     print("\n".join(str(f.relative_to(homework_dir)) for f in files))

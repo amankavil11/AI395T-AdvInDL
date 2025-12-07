@@ -22,9 +22,10 @@ def load(model_name: str = "vlm_model") -> BaseVLM:
     from peft import PeftModel
 
     model_path = Path(__file__).parent / model_name
+    model_path_str = str(model_path)
 
     vlm = BaseVLM()
-    vlm.model = PeftModel.from_pretrained(vlm.model, model_path).to(vlm.device)
+    vlm.model = PeftModel.from_pretrained(vlm.model, model_path_str).to(vlm.device)
     vlm.model.eval()
 
     return vlm
@@ -114,12 +115,12 @@ def train(
     num_train_epochs: int = 0.05,  # use only 0.05 epoch for training
     per_device_train_batch_size: int = 8,
     gradient_accumulation_steps: int = 8,
-    learning_rate: float = 5e-4,
-    lora_r: int = 16,
-    lora_alpha: int = 32,
+    learning_rate: float = 1e-3,
+    lora_r: int = 20,
+    lora_alpha: int = 40,
     lora_dropout: float = 0.0,
     num_workers: int = 16,
-    warmup_steps: int = 100,
+    warmup_steps: int = 10,
 ):
     """
     Fine-tune a VLM model using LoRA.
