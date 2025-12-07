@@ -115,12 +115,12 @@ def train(
     num_train_epochs: int = 0.05,  # use only 0.05 epoch for training
     per_device_train_batch_size: int = 8,
     gradient_accumulation_steps: int = 8,
-    learning_rate: float = 1e-3,
-    lora_r: int = 20,
-    lora_alpha: int = 40,
+    learning_rate: float = 3e-3,
+    lora_r: int = 22,
+    lora_alpha: int = 44,
     lora_dropout: float = 0.0,
     num_workers: int = 16,
-    warmup_steps: int = 10,
+    warmup_steps: int = 3,
 ):
     """
     Fine-tune a VLM model using LoRA.
